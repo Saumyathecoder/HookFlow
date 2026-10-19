@@ -1,4 +1,5 @@
-import { useState } from 'react';
+// Events.tsx
+import { useState, type ReactNode } from 'react';
 import { Zap } from 'lucide-react';
 import { api } from '../lib/api';
 
@@ -15,6 +16,18 @@ const EVENT_TYPES = [
 ];
 
 const DEFAULT_PAYLOAD = JSON.stringify({ amount: 1000, currency: 'INR', orderId: 'ord_123' }, null, 2);
+
+const inputCls =
+  'w-full rounded-xl bg-white/[0.04] px-4 py-3 text-sm text-white placeholder-zinc-600 ring-1 ring-white/10 transition focus:outline-none focus:ring-cyan-400/50';
+const eyebrow = 'text-[11px] uppercase tracking-widest text-zinc-500';
+
+function Card({ className = '', children }: { className?: string; children: ReactNode }) {
+  return (
+    <div className={`rounded-2xl bg-gradient-to-b from-[#131316] to-[#0c0c0e] ring-1 ring-white/5 ${className}`}>
+      {children}
+    </div>
+  );
+}
 
 export function Events() {
   const [eventType, setEventType] = useState(EVENT_TYPES[0]);
@@ -47,91 +60,116 @@ export function Events() {
   const isDuplicate = response?.data?.duplicate;
 
   return (
-    <div>
-      <div className="mb-8">
-        <h1 className="text-xl font-semibold text-white">Fire Event</h1>
-        <p className="text-sm text-zinc-500 mt-0.5">Send a test event to trigger webhook deliveries</p>
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <p className="text-[11px] uppercase tracking-[0.2em] text-cyan-400/80">Playground</p>
+        <h1 className="mt-1 text-2xl font-semibold tracking-tight text-white">Fire Event</h1>
+        <p className="mt-1 text-sm text-zinc-500">Send a test event to trigger webhook deliveries</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-6">
-        <div className="space-y-4">
-          <div className="bg-[#111] border border-[#222] rounded-xl p-5">
-            <p className="text-sm font-medium text-white mb-4">Event Details</p>
+      <div className="grid grid-cols-5 items-start gap-5">
+        {/* Form */}
+        <Card className="col-span-2 p-6">
+          <p className={eyebrow}>Event Details</p>
 
-            <div className="space-y-4">
-              <div>
-                <label className="text-xs text-zinc-500 mb-1.5 block">Event Type</label>
-                <select
-                  value={eventType}
-                  onChange={e => setEventType(e.target.value)}
-                  className="w-full bg-[#1a1a1a] border border-[#333] rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors"
-                >
-                  {EVENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                </select>
+          <div className="mt-5 space-y-6">
+            <div>
+              <label className={`${eyebrow} mb-2.5 block`}>Event Type</label>
+              <div className="flex flex-wrap gap-2">
+                {EVENT_TYPES.map(t => (
+                  <button
+                    key={t}
+                    onClick={() => setEventType(t)}
+                    className={`rounded-full px-3 py-1.5 font-mono text-xs ring-1 transition ${
+                      eventType === t
+                        ? 'bg-cyan-400/15 text-cyan-300 ring-cyan-400/40'
+                        : 'bg-white/[0.03] text-zinc-500 ring-white/10 hover:text-zinc-300'
+                    }`}
+                  >
+                    {t}
+                  </button>
+                ))}
               </div>
-
-              <div>
-                <label className="text-xs text-zinc-500 mb-1.5 block">Idempotency Key <span className="text-zinc-700">(optional)</span></label>
-                <input
-                  type="text"
-                  value={idemKey}
-                  onChange={e => setIdemKey(e.target.value)}
-                  placeholder="Leave empty to skip"
-                  className="w-full bg-[#1a1a1a] border border-[#333] rounded-lg px-3 py-2.5 text-sm text-white placeholder-zinc-700 focus:outline-none focus:border-indigo-500 transition-colors"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs text-zinc-500 mb-1.5 block">Payload (JSON)</label>
-                <textarea
-                  value={payload}
-                  onChange={e => setPayload(e.target.value)}
-                  rows={8}
-                  className="w-full bg-[#1a1a1a] border border-[#333] rounded-lg px-3 py-2.5 text-sm text-white font-mono focus:outline-none focus:border-indigo-500 transition-colors resize-none"
-                />
-              </div>
-
-              {error && <p className="text-xs text-red-400">{error}</p>}
-
-              <button
-                onClick={fire}
-                disabled={loading}
-                className="w-full flex items-center justify-center gap-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg py-2.5 text-sm font-medium transition-colors disabled:opacity-50"
-              >
-                <Zap size={15} />
-                {loading ? 'Firing...' : 'Fire Event'}
-              </button>
             </div>
-          </div>
-        </div>
 
-        <div>
+            <div>
+              <label className={`${eyebrow} mb-2 block`}>
+                Idempotency Key <span className="normal-case tracking-normal text-zinc-600">(optional)</span>
+              </label>
+              <input
+                type="text"
+                value={idemKey}
+                onChange={e => setIdemKey(e.target.value)}
+                placeholder="Leave empty to skip"
+                className={inputCls}
+              />
+            </div>
+
+            <div>
+              <label className={`${eyebrow} mb-2 block`}>Payload (JSON)</label>
+              <textarea
+                value={payload}
+                onChange={e => setPayload(e.target.value)}
+                rows={8}
+                className={`${inputCls} resize-none font-mono`}
+              />
+            </div>
+
+            {error && (
+              <div className="rounded-xl bg-red-500/10 px-4 py-3 ring-1 ring-red-500/20">
+                <p className="text-xs text-red-300">{error}</p>
+              </div>
+            )}
+
+            <button
+              onClick={fire}
+              disabled={loading}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-400 py-3 text-sm font-semibold text-zinc-950 transition hover:bg-cyan-300 disabled:opacity-50"
+            >
+              <Zap size={15} />
+              {loading ? 'Firing...' : 'Fire Event'}
+            </button>
+          </div>
+        </Card>
+
+        {/* Response */}
+        <div className="col-span-3">
           {response ? (
-            <div className="bg-[#111] border border-[#222] rounded-xl p-5 space-y-4">
+            <Card className="space-y-6 p-6">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-white">Response</p>
-                {isDuplicate
-                  ? <span className="text-xs text-yellow-400 bg-yellow-500/10 border border-yellow-500/20 px-2 py-0.5 rounded-full">Duplicate</span>
-                  : <span className="text-xs text-green-400 bg-green-500/10 border border-green-500/20 px-2 py-0.5 rounded-full">Success</span>}
+                <p className={eyebrow}>Response</p>
+                {isDuplicate ? (
+                  <span className="rounded-full bg-amber-500/10 px-2.5 py-1 text-[11px] font-medium text-amber-300 ring-1 ring-amber-500/20">
+                    Duplicate
+                  </span>
+                ) : (
+                  <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-medium text-emerald-300 ring-1 ring-emerald-500/20">
+                    Success
+                  </span>
+                )}
               </div>
 
-              <div className="bg-[#1a1a1a] rounded-lg p-3">
-                <p className="text-xs text-zinc-600 mb-1">Event ID</p>
-                <p className="text-xs font-mono text-zinc-300">{response.data?.event?.id}</p>
+              <div className="rounded-xl bg-white/[0.04] p-4 ring-1 ring-white/5">
+                <p className="text-[11px] uppercase tracking-widest text-zinc-600">Event ID</p>
+                <p className="mt-1.5 break-all font-mono text-xs text-cyan-300">{response.data?.event?.id}</p>
               </div>
 
               <div>
-                <p className="text-xs text-zinc-600 mb-2">Deliveries Queued ({deliveries.length})</p>
+                <p className={`${eyebrow} mb-3`}>Deliveries Queued ({deliveries.length})</p>
                 {deliveries.length === 0 ? (
                   <p className="text-xs text-zinc-600">No matching webhooks found for this event type</p>
                 ) : (
                   <div className="space-y-2">
                     {deliveries.map((d: any) => (
-                      <div key={d.deliveryAttemptId} className="bg-[#1a1a1a] rounded-lg p-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-zinc-400 font-mono truncate">{d.webhookId}</span>
-                          <span className="text-xs text-yellow-400 bg-yellow-500/10 border border-yellow-500/20 px-2 py-0.5 rounded-full">{d.status}</span>
-                        </div>
+                      <div
+                        key={d.deliveryAttemptId}
+                        className="flex items-center justify-between gap-3 rounded-xl bg-white/[0.03] px-4 py-3 ring-1 ring-white/5"
+                      >
+                        <span className="truncate font-mono text-xs text-zinc-300">{d.webhookId}</span>
+                        <span className="shrink-0 rounded-full bg-amber-500/10 px-2.5 py-1 text-[11px] font-medium text-amber-300 ring-1 ring-amber-500/20">
+                          {d.status}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -139,17 +177,19 @@ export function Events() {
               </div>
 
               <div>
-                <p className="text-xs text-zinc-600 mb-2">Raw Response</p>
-                <pre className="bg-[#1a1a1a] rounded-lg p-3 text-xs text-green-400 font-mono overflow-auto max-h-48">
+                <p className={`${eyebrow} mb-3`}>Raw Response</p>
+                <pre className="max-h-56 overflow-auto rounded-xl bg-black/40 p-4 font-mono text-xs text-emerald-300 ring-1 ring-white/5">
                   {JSON.stringify(response, null, 2)}
                 </pre>
               </div>
-            </div>
+            </Card>
           ) : (
-            <div className="bg-[#111] border border-[#222] rounded-xl p-5 h-full flex items-center justify-center">
+            <div className="flex min-h-[360px] items-center justify-center rounded-2xl border border-dashed border-white/10">
               <div className="text-center">
-                <Zap size={32} className="text-zinc-700 mx-auto mb-3" />
-                <p className="text-sm text-zinc-600">Fire an event to see the response</p>
+                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-cyan-400/10 ring-1 ring-cyan-400/20">
+                  <Zap size={22} className="text-cyan-300" />
+                </div>
+                <p className="text-sm text-zinc-500">Fire an event to see the response</p>
               </div>
             </div>
           )}

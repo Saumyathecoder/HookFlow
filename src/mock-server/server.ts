@@ -51,6 +51,27 @@ app.post('/webhook-fail', (req, res) => {
   res.status(500).json({ error: 'Simulated failure' });
 });
 
+// Simulate a temporary outage that recovers after two retries
+app.post('/webhook-flaky', (req, res) => {
+  const attempt = Number(req.header('x-webhook-attempt') ?? '1');
+
+  if (attempt < 3) {
+    console.log(`FLAKY RECEIVER: Attempt ${attempt} - HTTP 503`);
+    return res.status(503).json({
+      error: 'Temporary service outage',
+      attempt,
+    });
+  }
+
+  console.log(`FLAKY RECEIVER: Recovered on attempt ${attempt}`);
+  return res.status(200).json({
+    received: true,
+    recovered: true,
+    attempt,
+  });
+});
+
+
 const PORT = 4000;
 app.listen(PORT, () => {
   console.log(`\nMock webhook receiver running on http://localhost:${PORT}`);

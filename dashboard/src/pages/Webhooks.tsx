@@ -1,7 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { RefreshCw, X, CheckCircle, XCircle, Clock, Plus, Trash2, Edit2, BarChart2 } from 'lucide-react';
 import { api } from '../lib/api';
-import { statusBadge, Badge } from '../components/Badge';
 
 interface Webhook {
   id: string;
@@ -71,6 +70,60 @@ function timeAgo(d: string) {
 }
 
 type DrawerMode = 'history' | 'analytics' | 'add' | 'edit';
+
+/* ---------- UI helpers ---------- */
+
+const inputCls =
+  'w-full rounded-xl bg-white/[0.04] px-4 py-3 text-sm text-white placeholder-zinc-600 ring-1 ring-white/10 transition focus:outline-none focus:ring-cyan-400/50';
+const iconBtn =
+  'rounded-lg bg-white/5 p-2 text-zinc-400 ring-1 ring-white/10 transition hover:bg-white/10';
+const eyebrow = 'text-[11px] uppercase tracking-widest text-zinc-500';
+
+function Card({ className = '', children }: { className?: string; children: ReactNode }) {
+  return (
+    <div className={`rounded-2xl bg-gradient-to-b from-[#131316] to-[#0c0c0e] ring-1 ring-white/5 ${className}`}>
+      {children}
+    </div>
+  );
+}
+
+function Tile({ label, value, color = 'text-white', size = 'text-2xl' }: { label: string; value: string | number; color?: string; size?: string }) {
+  return (
+    <div className="rounded-xl bg-white/[0.04] p-4 ring-1 ring-white/5">
+      <p className={`${size} font-semibold tabular-nums ${color}`}>{value}</p>
+      <p className="mt-1 text-xs text-zinc-500">{label}</p>
+    </div>
+  );
+}
+
+function Chip({ label }: { label: string }) {
+  return (
+    <span className="rounded-md bg-cyan-400/10 px-2 py-0.5 font-mono text-[11px] text-cyan-300 ring-1 ring-cyan-400/15">
+      {label}
+    </span>
+  );
+}
+
+const STATUS_STYLE: Record<string, string> = {
+  ACTIVE: 'bg-emerald-500/10 text-emerald-300 ring-emerald-500/20',
+  SUSPENDED: 'bg-red-500/10 text-red-300 ring-red-500/20',
+  INACTIVE: 'bg-zinc-500/10 text-zinc-400 ring-zinc-500/20',
+};
+const STATUS_ACCENT: Record<string, string> = {
+  ACTIVE: 'bg-emerald-400',
+  SUSPENDED: 'bg-red-400',
+};
+
+function StatusPill({ status }: { status: string }) {
+  return (
+    <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ring-1 ${STATUS_STYLE[status] ?? STATUS_STYLE.INACTIVE}`}>
+      <span className="h-1.5 w-1.5 rounded-full bg-current" />
+      {status}
+    </span>
+  );
+}
+
+/* ---------- Page ---------- */
 
 export function Webhooks() {
   const [webhooks, setWebhooks] = useState<Webhook[]>([]);
@@ -238,24 +291,62 @@ export function Webhooks() {
 
   useEffect(() => { load(); }, []);
 
+  const picker = (
+    <div className="flex flex-wrap gap-2">
+      {EVENT_TYPES.map(et => (
+        <button
+          key={et}
+          onClick={() => toggleEventType(et)}
+          className={`rounded-full px-3 py-1.5 font-mono text-xs ring-1 transition ${
+            formEventTypes.includes(et)
+              ? 'bg-cyan-400/15 text-cyan-300 ring-cyan-400/40'
+              : 'bg-white/[0.03] text-zinc-500 ring-white/10 hover:text-zinc-300'
+          }`}
+        >
+          {et}
+        </button>
+      ))}
+    </div>
+  );
+
+  const errorBox = formError && (
+    <div className="rounded-xl bg-red-500/10 px-4 py-3 ring-1 ring-red-500/20">
+      <p className="text-xs text-red-300">{formError}</p>
+    </div>
+  );
+
+  const primaryBtn =
+    'w-full rounded-xl bg-cyan-400 py-3 text-sm font-semibold text-zinc-950 transition hover:bg-cyan-300 disabled:opacity-50';
+
+  const drawerTitle =
+    drawerMode === 'history' ? 'Delivery History'
+    : drawerMode === 'analytics' ? 'Webhook Analytics'
+    : drawerMode === 'add' ? 'Register Webhook'
+    : 'Edit Webhook';
+
   return (
-    <div>
-      <div className="flex items-center justify-between mb-8">
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-end justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-white">Webhooks</h1>
-          <p className="text-sm text-zinc-500 mt-0.5">Manage registered webhook endpoints</p>
+          <p className="text-[11px] uppercase tracking-[0.2em] text-cyan-400/80">Endpoints</p>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-white">Webhooks</h1>
+          <p className="mt-1 text-sm text-zinc-500">
+            Manage registered webhook endpoints
+            {!loading && webhooks.length > 0 && <span className="text-zinc-600"> · {webhooks.length} total</span>}
+          </p>
         </div>
         <div className="flex items-center gap-3">
           <button
             onClick={load}
-            className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] border border-[#222] rounded-lg text-sm text-zinc-400 hover:text-white transition-colors"
+            className="flex items-center gap-2 rounded-full bg-white/5 px-4 py-2 text-sm text-zinc-300 ring-1 ring-white/10 transition hover:bg-white/10 hover:text-white"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
             Refresh
           </button>
           <button
             onClick={openAdd}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-500 hover:bg-indigo-600 rounded-lg text-sm text-white font-medium transition-colors"
+            className="flex items-center gap-2 rounded-full bg-cyan-400 px-4 py-2 text-sm font-semibold text-zinc-950 transition hover:bg-cyan-300"
           >
             <Plus size={15} />
             Add Webhook
@@ -263,135 +354,123 @@ export function Webhooks() {
         </div>
       </div>
 
-      <div className="bg-[#111] border border-[#222] rounded-xl overflow-hidden">
-        {loading ? (
-          <div className="p-12 text-center text-zinc-600 text-sm">Loading webhooks...</div>
-        ) : webhooks.length === 0 ? (
-          <div className="p-12 text-center">
-            <p className="text-zinc-500 text-sm mb-3">No webhooks registered yet</p>
-            <button
-              onClick={openAdd}
-              className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-sm font-medium transition-colors"
-            >
-              Register your first webhook
-            </button>
-          </div>
-        ) : (
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-[#222]">
-                {['URL', 'Event Types', 'Status', 'Failures', 'Created', 'Actions'].map(h => (
-                  <th key={h} className="text-left px-5 py-3.5 text-xs text-zinc-600 uppercase tracking-wider font-medium">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {webhooks.map((w, i) => (
-                <tr key={w.id} className={`border-b border-[#1a1a1a] hover:bg-[#1a1a1a] transition-colors ${i === webhooks.length - 1 ? 'border-0' : ''}`}>
-                  <td className="px-5 py-4">
-                    <span className="text-sm text-zinc-300 font-mono truncate block max-w-[180px]" title={w.url}>{w.url}</span>
-                  </td>
-                  <td className="px-5 py-4">
-                    <div className="flex flex-wrap gap-1">
-                      {w.eventTypes.map(e => <Badge key={e} label={e} variant="accent" />)}
-                    </div>
-                  </td>
-                  <td className="px-5 py-4">{statusBadge(w.status)}</td>
-                  <td className="px-5 py-4">
-                    <span className={`text-sm font-medium ${w.failureCount > 0 ? 'text-red-400' : 'text-zinc-500'}`}>
-                      {w.failureCount}
+      {/* List */}
+      {loading ? (
+        <div className="space-y-3">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="h-28 animate-pulse rounded-2xl bg-white/5" />
+          ))}
+        </div>
+      ) : webhooks.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-white/10 p-14 text-center">
+          <p className="mb-4 text-sm text-zinc-500">No webhooks registered yet</p>
+          <button
+            onClick={openAdd}
+            className="rounded-full bg-cyan-400 px-5 py-2 text-sm font-semibold text-zinc-950 transition hover:bg-cyan-300"
+          >
+            Register your first webhook
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {webhooks.map(w => (
+            <Card key={w.id} className="relative overflow-hidden p-5 pl-6 transition hover:ring-white/10">
+              <span className={`absolute bottom-4 left-0 top-4 w-1 rounded-r-full ${STATUS_ACCENT[w.status] ?? 'bg-zinc-600'}`} />
+              <div className="flex items-start justify-between gap-6">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-3">
+                    <p className="truncate font-mono text-sm text-zinc-100" title={w.url}>{w.url}</p>
+                    <StatusPill status={w.status} />
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {w.eventTypes.map(e => <Chip key={e} label={e} />)}
+                  </div>
+                  <p className="mt-3 text-xs text-zinc-500">
+                    Created {timeAgo(w.createdAt)}
+                    <span className="mx-2 text-zinc-700">•</span>
+                    <span className={w.failureCount > 0 ? 'text-red-400' : ''}>
+                      {w.failureCount} {w.failureCount === 1 ? 'failure' : 'failures'}
                     </span>
-                  </td>
-                  <td className="px-5 py-4 text-sm text-zinc-500">{timeAgo(w.createdAt)}</td>
-                  <td className="px-5 py-4">
-                    <div className="flex items-center gap-1.5">
-                      <button onClick={() => viewHistory(w.id)} className="px-2.5 py-1.5 bg-[#1a1a1a] border border-[#333] rounded-lg text-xs text-zinc-400 hover:text-white transition-colors" title="Delivery History">
-                        History
-                      </button>
-                      <button onClick={() => viewAnalytics(w.id)} className="p-1.5 bg-[#1a1a1a] border border-[#333] rounded-lg text-zinc-400 hover:text-indigo-400 transition-colors" title="Analytics">
-                        <BarChart2 size={13} />
-                      </button>
-                      <button onClick={() => openEdit(w)} className="p-1.5 bg-[#1a1a1a] border border-[#333] rounded-lg text-zinc-400 hover:text-white transition-colors" title="Edit">
-                        <Edit2 size={13} />
-                      </button>
-                      {w.status === 'SUSPENDED' && (
-                        <button onClick={() => reactivate(w.id)} className="px-2.5 py-1.5 bg-green-500/10 border border-green-500/20 rounded-lg text-xs text-green-400 hover:bg-green-500/20 transition-colors">
-                          Reactivate
-                        </button>
-                      )}
-                      <button onClick={() => handleDelete(w.id)} className="p-1.5 bg-[#1a1a1a] border border-[#333] rounded-lg text-zinc-400 hover:text-red-400 transition-colors" title="Delete">
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+                  </p>
+                </div>
+
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <button
+                    onClick={() => viewHistory(w.id)}
+                    className="rounded-lg bg-white/5 px-3 py-2 text-xs text-zinc-300 ring-1 ring-white/10 transition hover:bg-white/10 hover:text-white"
+                    title="Delivery History"
+                  >
+                    History
+                  </button>
+                  <button onClick={() => viewAnalytics(w.id)} className={`${iconBtn} hover:text-cyan-300`} title="Analytics">
+                    <BarChart2 size={14} />
+                  </button>
+                  <button onClick={() => openEdit(w)} className={`${iconBtn} hover:text-white`} title="Edit">
+                    <Edit2 size={14} />
+                  </button>
+                  {w.status === 'SUSPENDED' && (
+                    <button
+                      onClick={() => reactivate(w.id)}
+                      className="rounded-lg bg-emerald-500/10 px-3 py-2 text-xs text-emerald-300 ring-1 ring-emerald-500/20 transition hover:bg-emerald-500/20"
+                    >
+                      Reactivate
+                    </button>
+                  )}
+                  <button onClick={() => handleDelete(w.id)} className={`${iconBtn} hover:text-red-400`} title="Delete">
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
 
       {/* Overlay */}
       {drawerOpen && (
-        <div className="fixed inset-0 bg-black/60 z-40" onClick={closeDrawer} />
+        <div className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm" onClick={closeDrawer} />
       )}
 
       {/* Drawer */}
-      <div className={`fixed top-0 right-0 bottom-0 w-[520px] bg-[#111] border-l border-[#222] z-50 overflow-y-auto transition-transform duration-300 ${drawerOpen ? 'translate-x-0' : 'translate-x-full'}`}>
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-base font-semibold text-white">
-              {drawerMode === 'history' && 'Delivery History'}
-              {drawerMode === 'analytics' && 'Webhook Analytics'}
-              {drawerMode === 'add' && 'Register Webhook'}
-              {drawerMode === 'edit' && 'Edit Webhook'}
-            </h2>
-            <button onClick={closeDrawer} className="p-2 hover:bg-[#1a1a1a] rounded-lg transition-colors">
-              <X size={16} className="text-zinc-500" />
+      <div
+        className={`fixed bottom-3 right-3 top-3 z-50 w-[500px] overflow-y-auto rounded-3xl bg-[#0d0d10] ring-1 ring-white/10 transition-transform duration-300 ${
+          drawerOpen ? 'translate-x-0' : 'translate-x-[110%]'
+        }`}
+      >
+        <div className="p-7">
+          <div className="mb-7 flex items-start justify-between">
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.2em] text-cyan-400/80">
+                {drawerMode === 'add' || drawerMode === 'edit' ? 'Configure' : 'Insights'}
+              </p>
+              <h2 className="mt-1 text-lg font-semibold tracking-tight text-white">{drawerTitle}</h2>
+            </div>
+            <button onClick={closeDrawer} className="rounded-full bg-white/5 p-2 ring-1 ring-white/10 transition hover:bg-white/10">
+              <X size={16} className="text-zinc-400" />
             </button>
           </div>
 
           {/* ADD FORM */}
           {drawerMode === 'add' && (
-            <div className="space-y-5">
+            <div className="space-y-6">
               <div>
-                <label className="text-xs text-zinc-500 mb-1.5 block">Webhook URL</label>
+                <label className={`${eyebrow} mb-2 block`}>Webhook URL</label>
                 <input
                   type="text"
                   value={formUrl}
                   onChange={e => setFormUrl(e.target.value)}
                   placeholder="https://your-server.com/webhook"
-                  className="w-full bg-[#1a1a1a] border border-[#333] rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-700 focus:outline-none focus:border-indigo-500 transition-colors"
+                  className={inputCls}
                 />
               </div>
               <div>
-                <label className="text-xs text-zinc-500 mb-2 block">Event Types <span className="text-zinc-700">(select all that apply)</span></label>
-                <div className="flex flex-wrap gap-2">
-                  {EVENT_TYPES.map(et => (
-                    <button
-                      key={et}
-                      onClick={() => toggleEventType(et)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
-                        formEventTypes.includes(et)
-                          ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-400'
-                          : 'bg-[#1a1a1a] border-[#333] text-zinc-500 hover:text-zinc-300'
-                      }`}
-                    >
-                      {et}
-                    </button>
-                  ))}
-                </div>
+                <label className={`${eyebrow} mb-2.5 block`}>
+                  Event Types <span className="normal-case tracking-normal text-zinc-600">(select all that apply)</span>
+                </label>
+                {picker}
               </div>
-              {formError && (
-                <div className="bg-red-500/5 border border-red-500/20 rounded-lg px-4 py-3">
-                  <p className="text-xs text-red-400">{formError}</p>
-                </div>
-              )}
-              <button
-                onClick={handleAdd}
-                disabled={formLoading}
-                className="w-full bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl py-3 text-sm font-medium transition-colors disabled:opacity-50"
-              >
+              {errorBox}
+              <button onClick={handleAdd} disabled={formLoading} className={primaryBtn}>
                 {formLoading ? 'Registering...' : 'Register Webhook'}
               </button>
             </div>
@@ -399,55 +478,33 @@ export function Webhooks() {
 
           {/* EDIT FORM */}
           {drawerMode === 'edit' && (
-            <div className="space-y-5">
+            <div className="space-y-6">
               <div>
-                <label className="text-xs text-zinc-500 mb-1.5 block">Webhook URL</label>
+                <label className={`${eyebrow} mb-2 block`}>Webhook URL</label>
                 <input
                   type="text"
                   value={formUrl}
                   onChange={e => setFormUrl(e.target.value)}
-                  className="w-full bg-[#1a1a1a] border border-[#333] rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-700 focus:outline-none focus:border-indigo-500 transition-colors"
+                  className={inputCls}
                 />
               </div>
               <div>
-                <label className="text-xs text-zinc-500 mb-2 block">Event Types</label>
-                <div className="flex flex-wrap gap-2">
-                  {EVENT_TYPES.map(et => (
-                    <button
-                      key={et}
-                      onClick={() => toggleEventType(et)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
-                        formEventTypes.includes(et)
-                          ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-400'
-                          : 'bg-[#1a1a1a] border-[#333] text-zinc-500 hover:text-zinc-300'
-                      }`}
-                    >
-                      {et}
-                    </button>
-                  ))}
-                </div>
+                <label className={`${eyebrow} mb-2.5 block`}>Event Types</label>
+                {picker}
               </div>
               <div>
-                <label className="text-xs text-zinc-500 mb-1.5 block">Status</label>
+                <label className={`${eyebrow} mb-2 block`}>Status</label>
                 <select
                   value={formStatus}
                   onChange={e => setFormStatus(e.target.value)}
-                  className="w-full bg-[#1a1a1a] border border-[#333] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                  className={inputCls}
                 >
                   <option value="ACTIVE">ACTIVE</option>
                   <option value="INACTIVE">INACTIVE</option>
                 </select>
               </div>
-              {formError && (
-                <div className="bg-red-500/5 border border-red-500/20 rounded-lg px-4 py-3">
-                  <p className="text-xs text-red-400">{formError}</p>
-                </div>
-              )}
-              <button
-                onClick={handleEdit}
-                disabled={formLoading}
-                className="w-full bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl py-3 text-sm font-medium transition-colors disabled:opacity-50"
-              >
+              {errorBox}
+              <button onClick={handleEdit} disabled={formLoading} className={primaryBtn}>
                 {formLoading ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
@@ -456,59 +513,43 @@ export function Webhooks() {
           {/* HISTORY */}
           {drawerMode === 'history' && (
             drawerLoading ? (
-              <div className="text-center text-zinc-600 text-sm py-12">Loading...</div>
+              <div className="space-y-3">
+                {[...Array(4)].map((_, i) => <div key={i} className="h-16 animate-pulse rounded-xl bg-white/5" />)}
+              </div>
             ) : history ? (
               <>
-                <div className="font-mono text-xs text-zinc-500 bg-[#1a1a1a] rounded-lg px-3 py-2 mb-6 truncate">
+                <div className="mb-5 truncate rounded-xl bg-white/[0.04] px-3 py-2 font-mono text-xs text-zinc-400 ring-1 ring-white/5">
                   {history.webhook.url}
                 </div>
-                <div className="grid grid-cols-3 gap-3 mb-6">
-                  <div className="bg-[#1a1a1a] rounded-lg p-3 text-center">
-                    <p className="text-xl font-semibold text-white">{history.stats.total}</p>
-                    <p className="text-xs text-zinc-600 mt-0.5">Total</p>
-                  </div>
-                  <div className="bg-[#1a1a1a] rounded-lg p-3 text-center">
-                    <p className="text-xl font-semibold text-green-400">{history.stats.successRate}</p>
-                    <p className="text-xs text-zinc-600 mt-0.5">Success Rate</p>
-                  </div>
-                  <div className="bg-[#1a1a1a] rounded-lg p-3 text-center">
-                    <p className="text-xl font-semibold text-indigo-400">{history.stats.avgResponseTimeMs}ms</p>
-                    <p className="text-xs text-zinc-600 mt-0.5">Avg Latency</p>
-                  </div>
+                <div className="mb-3 grid grid-cols-3 gap-3">
+                  <Tile label="Total" value={history.stats.total} />
+                  <Tile label="Success Rate" value={history.stats.successRate} color="text-green-400" />
+                  <Tile label="Avg Latency" value={`${history.stats.avgResponseTimeMs}ms`} color="text-cyan-300" />
                 </div>
-                <div className="grid grid-cols-3 gap-3 mb-6">
-                  <div className="bg-[#1a1a1a] rounded-lg p-3 text-center">
-                    <p className="text-lg font-semibold text-green-400">{history.stats.successful}</p>
-                    <p className="text-xs text-zinc-600 mt-0.5">Successful</p>
-                  </div>
-                  <div className="bg-[#1a1a1a] rounded-lg p-3 text-center">
-                    <p className="text-lg font-semibold text-red-400">{history.stats.failed}</p>
-                    <p className="text-xs text-zinc-600 mt-0.5">Failed</p>
-                  </div>
-                  <div className="bg-[#1a1a1a] rounded-lg p-3 text-center">
-                    <p className="text-lg font-semibold text-red-400">{history.stats.dlq}</p>
-                    <p className="text-xs text-zinc-600 mt-0.5">In DLQ</p>
-                  </div>
+                <div className="mb-7 grid grid-cols-3 gap-3">
+                  <Tile label="Successful" value={history.stats.successful} color="text-green-400" size="text-lg" />
+                  <Tile label="Failed" value={history.stats.failed} color="text-red-400" size="text-lg" />
+                  <Tile label="In DLQ" value={history.stats.dlq} color="text-red-400" size="text-lg" />
                 </div>
-                <p className="text-xs text-zinc-600 uppercase tracking-wider mb-3">Recent Attempts</p>
+                <p className={`${eyebrow} mb-3`}>Recent Attempts</p>
                 <div className="space-y-2">
                   {history.attempts.map(a => (
-                    <div key={a.id} className="bg-[#1a1a1a] rounded-lg p-3 flex items-center gap-3">
+                    <div key={a.id} className="flex items-center gap-3 rounded-xl bg-white/[0.03] p-3 ring-1 ring-white/5">
                       {a.status === 'SUCCESS'
-                        ? <CheckCircle size={16} className="text-green-400 flex-shrink-0" />
+                        ? <CheckCircle size={16} className="flex-shrink-0 text-green-400" />
                         : a.status === 'PENDING'
-                        ? <Clock size={16} className="text-yellow-400 flex-shrink-0" />
-                        : <XCircle size={16} className="text-red-400 flex-shrink-0" />}
-                      <div className="flex-1 min-w-0">
+                        ? <Clock size={16} className="flex-shrink-0 text-yellow-400" />
+                        : <XCircle size={16} className="flex-shrink-0 text-red-400" />}
+                      <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-medium text-white">{a.event?.eventType}</span>
                           <span className="text-xs text-zinc-600">#{a.attemptNumber}</span>
-                          {a.httpStatusCode && <span className="text-xs font-mono text-zinc-500">{a.httpStatusCode}</span>}
+                          {a.httpStatusCode && <span className="font-mono text-xs text-zinc-500">{a.httpStatusCode}</span>}
                         </div>
-                        {a.errorMessage && <p className="text-xs text-red-400 truncate mt-0.5">{a.errorMessage}</p>}
+                        {a.errorMessage && <p className="mt-0.5 truncate text-xs text-red-400">{a.errorMessage}</p>}
                       </div>
-                      <div className="text-right flex-shrink-0">
-                        {a.responseTimeMs && <p className="text-xs text-zinc-400">{a.responseTimeMs}ms</p>}
+                      <div className="flex-shrink-0 text-right">
+                        {a.responseTimeMs && <p className="text-xs text-zinc-300">{a.responseTimeMs}ms</p>}
                         <p className="text-xs text-zinc-600">{timeAgo(a.createdAt)}</p>
                       </div>
                     </div>
@@ -521,60 +562,50 @@ export function Webhooks() {
           {/* ANALYTICS */}
           {drawerMode === 'analytics' && (
             drawerLoading ? (
-              <div className="text-center text-zinc-600 text-sm py-12">Loading analytics...</div>
+              <div className="space-y-3">
+                {[...Array(4)].map((_, i) => <div key={i} className="h-16 animate-pulse rounded-xl bg-white/5" />)}
+              </div>
             ) : analytics ? (
               <>
-                <div className="font-mono text-xs text-zinc-500 bg-[#1a1a1a] rounded-lg px-3 py-2 mb-6 truncate">
+                <div className="mb-5 truncate rounded-xl bg-white/[0.04] px-3 py-2 font-mono text-xs text-zinc-400 ring-1 ring-white/5">
                   {analytics.webhook.url}
                 </div>
-                <div className="grid grid-cols-2 gap-3 mb-6">
-                  <div className="bg-[#1a1a1a] rounded-lg p-4">
-                    <p className="text-2xl font-semibold text-green-400">{analytics.stats.successRate}</p>
-                    <p className="text-xs text-zinc-600 mt-1">Success Rate</p>
-                  </div>
-                  <div className="bg-[#1a1a1a] rounded-lg p-4">
-                    <p className="text-2xl font-semibold text-indigo-400">{analytics.stats.responseTime.avg}ms</p>
-                    <p className="text-xs text-zinc-600 mt-1">Avg Response</p>
-                  </div>
-                  <div className="bg-[#1a1a1a] rounded-lg p-4">
-                    <p className="text-2xl font-semibold text-white">{analytics.stats.totalDeliveries}</p>
-                    <p className="text-xs text-zinc-600 mt-1">Total Deliveries</p>
-                  </div>
-                  <div className="bg-[#1a1a1a] rounded-lg p-4">
-                    <p className="text-2xl font-semibold text-red-400">{analytics.stats.dlqCount}</p>
-                    <p className="text-xs text-zinc-600 mt-1">In DLQ</p>
-                  </div>
+                <div className="mb-4 grid grid-cols-2 gap-3">
+                  <Tile label="Success Rate" value={analytics.stats.successRate} color="text-green-400" />
+                  <Tile label="Avg Response" value={`${analytics.stats.responseTime.avg}ms`} color="text-cyan-300" />
+                  <Tile label="Total Deliveries" value={analytics.stats.totalDeliveries} />
+                  <Tile label="In DLQ" value={analytics.stats.dlqCount} color="text-red-400" />
                 </div>
-                <div className="bg-[#1a1a1a] rounded-lg p-4 mb-4">
-                  <p className="text-xs text-zinc-600 mb-3">Response Time</p>
-                  <div className="flex justify-between">
-                    <div className="text-center">
+                <div className="mb-7 rounded-xl bg-white/[0.04] p-4 ring-1 ring-white/5">
+                  <p className={`${eyebrow} mb-3`}>Response Time</p>
+                  <div className="grid grid-cols-3 divide-x divide-white/5 text-center">
+                    <div>
                       <p className="text-sm font-medium text-white">{analytics.stats.responseTime.min}ms</p>
                       <p className="text-xs text-zinc-600">Min</p>
                     </div>
-                    <div className="text-center">
-                      <p className="text-sm font-medium text-indigo-400">{analytics.stats.responseTime.avg}ms</p>
+                    <div>
+                      <p className="text-sm font-medium text-cyan-300">{analytics.stats.responseTime.avg}ms</p>
                       <p className="text-xs text-zinc-600">Avg</p>
                     </div>
-                    <div className="text-center">
+                    <div>
                       <p className="text-sm font-medium text-white">{analytics.stats.responseTime.max}ms</p>
                       <p className="text-xs text-zinc-600">Max</p>
                     </div>
                   </div>
                 </div>
-                <p className="text-xs text-zinc-600 uppercase tracking-wider mb-3">Recent Attempts</p>
+                <p className={`${eyebrow} mb-3`}>Recent Attempts</p>
                 <div className="space-y-2">
                   {analytics.recentAttempts.map(a => (
-                    <div key={a.id} className="bg-[#0a0a0a] rounded-lg p-3 flex items-center gap-3">
+                    <div key={a.id} className="flex items-center gap-3 rounded-xl bg-white/[0.03] p-3 ring-1 ring-white/5">
                       {a.status === 'SUCCESS'
-                        ? <CheckCircle size={14} className="text-green-400 flex-shrink-0" />
-                        : <XCircle size={14} className="text-red-400 flex-shrink-0" />}
+                        ? <CheckCircle size={14} className="flex-shrink-0 text-green-400" />
+                        : <XCircle size={14} className="flex-shrink-0 text-red-400" />}
                       <div className="flex-1">
                         <span className="text-xs text-white">{a.event?.eventType}</span>
-                        <span className="text-xs text-zinc-600 ml-2">#{a.attemptNumber}</span>
+                        <span className="ml-2 text-xs text-zinc-600">#{a.attemptNumber}</span>
                       </div>
                       <div className="text-right">
-                        {a.responseTimeMs && <p className="text-xs text-zinc-400">{a.responseTimeMs}ms</p>}
+                        {a.responseTimeMs && <p className="text-xs text-zinc-300">{a.responseTimeMs}ms</p>}
                         <p className="text-xs text-zinc-600">{timeAgo(a.createdAt)}</p>
                       </div>
                     </div>
@@ -588,12 +619,12 @@ export function Webhooks() {
 
       {/* Toast */}
       {toast && (
-        <div className={`fixed bottom-6 right-6 border rounded-xl px-5 py-3.5 text-sm text-white flex items-center gap-2 z-50 ${
-          toastType === 'success'
-            ? 'bg-[#111] border-green-500/30'
-            : 'bg-[#111] border-red-500/30'
-        }`}>
-          <span className={toastType === 'success' ? 'text-green-400' : 'text-red-400'}>●</span>
+        <div
+          className={`fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2.5 rounded-full bg-[#111114] px-5 py-3 text-sm text-white ring-1 ${
+            toastType === 'success' ? 'ring-green-500/30' : 'ring-red-500/30'
+          }`}
+        >
+          <span className={`h-2 w-2 rounded-full ${toastType === 'success' ? 'bg-green-400' : 'bg-red-400'}`} />
           {toast}
         </div>
       )}

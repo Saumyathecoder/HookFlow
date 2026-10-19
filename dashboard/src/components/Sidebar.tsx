@@ -1,4 +1,10 @@
-import { LayoutDashboard, Webhook, Zap, AlertTriangle, LogOut } from 'lucide-react';
+import {
+  LayoutDashboard,
+  Webhook,
+  Zap,
+  ShieldAlert,
+  LogOut,
+} from 'lucide-react';
 import { clearKey } from '../lib/api';
 
 type Page = 'overview' | 'webhooks' | 'events' | 'dlq';
@@ -12,7 +18,7 @@ const links = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
   { id: 'webhooks', label: 'Webhooks', icon: Webhook },
   { id: 'events', label: 'Fire Event', icon: Zap },
-  { id: 'dlq', label: 'Dead Letter Queue', icon: AlertTriangle },
+  { id: 'dlq', label: 'Failed Deliveries', icon: ShieldAlert },
 ] as const;
 
 export function Sidebar({ current, onChange }: SidebarProps) {
@@ -22,46 +28,62 @@ export function Sidebar({ current, onChange }: SidebarProps) {
   }
 
   return (
-    <aside className="fixed top-0 left-0 bottom-0 w-56 bg-[#111] border-r border-[#222] flex flex-col">
-      <div className="px-5 py-6 border-b border-[#222]">
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-indigo-500 flex items-center justify-center">
-            <Zap size={14} className="text-white" />
+    <aside className="fixed bottom-0 left-0 top-0 flex w-56 flex-col bg-[#0a0a0c] ring-1 ring-white/5">
+      {/* Brand */}
+      <div className="px-5 pb-6 pt-7">
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-cyan-400">
+            <Webhook size={18} className="text-zinc-950" />
           </div>
-          <div>
-            <p className="text-sm font-semibold text-white">WebhookEngine</p>
-            <p className="text-xs text-zinc-600">Delivery System</p>
+          <div className="leading-tight">
+            <p className="text-base font-semibold tracking-tight text-white">
+              Hook<span className="text-cyan-400">Flow</span>
+            </p>
+            <p className="text-[10px] uppercase tracking-widest text-zinc-600">Delivery Console</p>
           </div>
         </div>
       </div>
 
-      <nav className="flex-1 px-3 py-4 space-y-0.5">
-        {links.map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            onClick={() => onChange(id as Page)}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
-              current === id
-                ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
-                : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
-            }`}
-          >
-            <Icon size={16} />
-            {label}
-            {id === 'dlq' && current !== 'dlq' && (
-              <span className="ml-auto w-2 h-2 rounded-full bg-red-500" />
-            )}
-          </button>
-        ))}
+      {/* Navigation */}
+      <nav className="flex-1 px-3">
+        <p className="mb-3 px-3 text-[11px] uppercase tracking-widest text-zinc-600">Workspace</p>
+
+        <div className="space-y-1">
+          {links.map(({ id, label, icon: Icon }) => {
+            const active = current === id;
+            return (
+              <button
+                key={id}
+                onClick={() => onChange(id as Page)}
+                className={`relative flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-sm transition ${
+                  active
+                    ? 'bg-white/[0.05] font-medium text-white'
+                    : 'text-zinc-500 hover:bg-white/[0.03] hover:text-zinc-200'
+                }`}
+              >
+                {active && (
+                  <span className="absolute bottom-2.5 left-0 top-2.5 w-1 rounded-r-full bg-cyan-400" />
+                )}
+                <Icon size={16} className={active ? 'text-cyan-300' : ''} />
+                {label}
+              </button>
+            );
+          })}
+        </div>
       </nav>
 
-      <div className="px-3 py-4 border-t border-[#222]">
+      {/* Footer */}
+      <div className="space-y-3 p-4">
+        <div className="flex items-center gap-2 rounded-full bg-white/[0.03] px-3 py-2 ring-1 ring-white/5">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
+          <span className="text-xs text-zinc-500">Local Development</span>
+        </div>
         <button
           onClick={logout}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-zinc-600 hover:text-red-400 hover:bg-red-500/5 transition-all"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-white/5 py-2.5 text-sm text-zinc-400 ring-1 ring-white/10 transition hover:bg-red-500/10 hover:text-red-300 hover:ring-red-500/20"
         >
-          <LogOut size={16} />
-          Sign out
+          <LogOut size={15} />
+          Sign Out
         </button>
       </div>
     </aside>

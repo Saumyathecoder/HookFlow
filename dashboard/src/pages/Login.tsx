@@ -14,17 +14,6 @@ export function Login({ onLogin }: { onLogin: () => void }) {
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  async function handleDemoLogin() {
-    setLoading(true);
-    setError('');
-    try {
-      const demoKey = 'whe_626cc78e774dfd3a19dd3a6ae1f84799c848531cdfa5875c3a76cdb1b4a8dfc0';
-      setKey(demoKey);
-      onLogin();
-    } finally {
-      setLoading(false);
-    }
-  }
 
   async function handleRegister() {
     if (!name.trim()) { setError('Please enter a name'); return; }
@@ -98,16 +87,9 @@ export function Login({ onLogin }: { onLogin: () => void }) {
         {/* CHOOSE step */}
         {step === 'choose' && (
           <div className="bg-[#111] border border-[#222] rounded-2xl p-8 text-center">
-            <h1 className="text-2xl font-semibold text-white mb-2">WebhookEngine</h1>
+            <h1 className="text-2xl font-semibold text-white mb-2">HookFlow</h1>
             <p className="text-sm text-zinc-500 mb-8">Production grade webhook delivery system</p>
             <div className="space-y-3">
-              <button
-                onClick={handleDemoLogin}
-                disabled={loading}
-                className="w-full bg-green-600 hover:bg-green-700 text-white rounded-xl py-3.5 text-sm font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-              >
-                ⚡ Try Demo (Instant Access)
-              </button>
               <button
                 onClick={() => { setStep('register'); setError(''); }}
                 className="w-full bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl py-3.5 text-sm font-medium transition-colors flex items-center justify-center gap-2"
@@ -141,7 +123,7 @@ export function Login({ onLogin }: { onLogin: () => void }) {
                   value={name}
                   onChange={e => setName(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleRegister()}
-                  placeholder="e.g. Vaibhav or My Project"
+                  placeholder="e.g. Saumya Joshi or Payment Service"
                   autoFocus
                   className="w-full bg-[#1a1a1a] border border-[#333] rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-700 focus:outline-none focus:border-indigo-500 transition-colors"
                 />
